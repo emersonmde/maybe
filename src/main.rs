@@ -1,15 +1,14 @@
 // mod prolly_tree;
-// mod node;
+mod node;
+mod kvstore;
 
 use std::collections::{HashMap, BTreeMap};
 use core::hash::Hash;
 
+use kvstore::KVStore;
+use node::Node;
 
-trait KVStore<K, V> {
-    fn new() -> Self;
-    fn get(&self, key: K) -> Option<V>;
-    fn put(&mut self, key: K, value: V);
-}
+
 
 #[derive(Debug)]
 struct MemoryStore<K, V> {
@@ -37,13 +36,6 @@ where
     }
 }
 
-// struct Commit {
-//     hash: String,
-//     parents: Vec<String>,
-//     tree: ProllyTree<Vec<u8>, Vec<u8>>,
-// }
-
-
 #[derive(Debug)]
 struct ProllyTree<K, V> {
     root: Node<K, V>,
@@ -69,99 +61,7 @@ where
 
     fn put(&mut self, key: K, value: V) {
         self.root.put(key, value);
-    }
-}
-
-#[derive(Debug)]
-enum Node<K, V> {
-    Leaf {
-        hash: String,
-        data: BTreeMap<K, V>,
-    },
-    Branch {
-        hash: String,
-        children: Vec<Node<K, V>>,
-    },
-}
-
-impl<K, V> KVStore<K, V> for Node<K, V>
-where
-    K: Ord + Clone,
-    V: Clone,
-{
-    fn new() -> Self {
-        Self::Leaf {
-            hash: "".to_string(),
-            data: BTreeMap::new(),
-        }
-    }
-
-    fn get(&self, key: K) -> Option<V> {
-        match self {
-            Node::Leaf { data, .. } => data.get(&key).cloned(),
-            Node::Branch { children, .. } => {
-                let mut result = None;
-                for child in children {
-                    result = child.get(key.clone());
-                    if result.is_some() {
-                        break;
-                    }
-                }
-                result
-            }
-        }
-    }
-
-    fn put(&mut self, key: K, value: V) {
-        match self {
-            Node::Leaf { data, .. } => {
-                data.insert(key.clone(), value);
-            }
-            Node::Branch { children, .. } => {
-                for child in children {
-                    child.put(key.clone(), value.clone());
-                }
-            }
-        }
-    }
-}
-
-impl<K, V> Node<K, V>
-where
-    K: Ord + Clone,
-    V: Clone,
-{
-    fn split(&mut self) {
-        match self {
-            Node::Leaf { data, .. } => {
-                let mut left = Node::Leaf {
-                    hash: "".to_string(),
-                    data: BTreeMap::new(),
-                };
-                let mut right = Node::Leaf {
-                    hash: "".to_string(),
-                    data: BTreeMap::new(),
-                };
-                let mut i = 0;
-                for (key, value) in data {
-                    if i % 2 == 0 {
-                        left.put(key.clone(), value.clone());
-                    } else {
-                        right.put(key.clone(), value.clone());
-                    }
-                    i += 1;
-                }
-                *self = Node::Branch {
-                    hash: "".to_string(),
-                    children: vec![left, right],
-                };
-            }
-            Node::Branch { children, .. } => {
-                for child in children {
-                    child.split();
-                }
-            }
-        }
+        let chunks = self.root.chunk();
     }
 }
 
