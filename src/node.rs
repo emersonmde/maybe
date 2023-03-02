@@ -5,11 +5,11 @@ use std::collections::BTreeMap;
 #[derive(Debug)]
 pub enum Node {
     Leaf {
-        hash_value: String,
+        digest: String,
         data: BTreeMap<Vec<u8>, Vec<u8>>,
     },
     Branch {
-        hash_value: String,
+        digest: String,
         children: Vec<Node>,
     },
 }
@@ -17,7 +17,7 @@ pub enum Node {
 impl KVStore<Vec<u8>, Vec<u8>> for Node {
     fn new() -> Self {
         Self::Leaf {
-            hash_value: "".to_string(),
+            digest: "".to_string(),
             data: BTreeMap::new(),
         }
     }
@@ -58,11 +58,11 @@ impl Node {
         match self {
             Node::Leaf { data, .. } => {
                 let mut left = Node::Leaf {
-                    hash_value: "".to_string(),
+                    digest: "".to_string(),
                     data: BTreeMap::new(),
                 };
                 let mut right = Node::Leaf {
-                    hash_value: "".to_string(),
+                    digest: "".to_string(),
                     data: BTreeMap::new(),
                 };
                 let mut i = 0;
@@ -83,31 +83,29 @@ impl Node {
     fn calc_hash(&mut self) -> String {
         let mut hasher = Sha256::new();
         match self {
-            Node::Leaf { data, hash_value } => {
+            Node::Leaf { data, digest } => {
                 for (key, value) in data {
                     hasher.update(key);
                     hasher.update(value);
                 }
-                *hash_value = format!("{:x}", hasher.finalize());
-                return hash_value.clone();
+                *digest = format!("{:x}", hasher.finalize());
+                return digest.clone();
             }
             Node::Branch {
                 children,
-                hash_value,
+                digest,
             } => {
                 for child in children {
                     let (Node::Leaf {
-                        hash_value: child_hash,
-                        ..
+                        digest: child_hash, ..
                     }
                     | Node::Branch {
-                        hash_value: child_hash,
-                        ..
+                        digest: child_hash, ..
                     }) = child;
                     hasher.update(child_hash);
                 }
-                *hash_value = format!("{:x}", hasher.finalize());
-                return hash_value.clone();
+                *digest = format!("{:x}", hasher.finalize());
+                return digest.clone();
             }
         }
     }

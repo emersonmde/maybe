@@ -41,7 +41,7 @@ impl ProllyTree {
     fn new() -> Self {
         Self {
             root: Node::Leaf {
-                hash_value: "".to_string(),
+                digest: "".to_string(),
                 data: BTreeMap::new(),
             },
         }
